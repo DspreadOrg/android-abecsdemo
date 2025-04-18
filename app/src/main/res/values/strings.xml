@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">PPComLibrary</string>
+    <string name="action_open">Open</string>
+    <string name="action_getinfo">GetInfo</string>
+    <string name="action_getpin">GetPin</string>
+    <string name="action_getcard">GetCard</string>
+    <string name="action_goonchip">GoOnChip</string>
+    <string name="action_finishchip">FinishChip</string>
+    <string name="action_close">Close</string>
+    <string name="action_events">CheckEvents</string>
+    <string name="action_tablesload">TablesLoad</string>
+    <string name="action_encryptBuffer">EncryptBuffer</string>
+    <string name="action_removecard">RemoveCard</string>
+    <string name="action_chipdirect">ChipDirect</string>
+    <string name="action_abort">Abort</string>
+    <string name="defaultMsgTxt">SETIS</string>
+</resources>
