@@ -14,9 +14,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PPComLibrary"
+rootProject.name = "PPComDemo"
 include ':app'
-include ':dsplib:bcppE5855'
-include ':dsplib:ppcomlib'
-include ':dsplib:abecsLib'
 

@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -72,16 +73,24 @@ public class WelcomeActivity extends AppCompatActivity {
     private static TextView textView;
 
     AcessoFuncoesPinpad acessoFuncoes;
+    ManageFilesPermissionHelper.OnManageAllFilesPermissionResult resultCallback = new ManageFilesPermissionHelper.OnManageAllFilesPermissionResult() {
+        @Override
+        public void onGranted() {
+            Log.e(this.getClass().getName(), "already get permission");
+            PPCompAndroid.getInstance().initBindService();
+        }
 
+        @Override
+        public void onDenied() {
+            Log.e(this.getClass().getName(), "no permission granted");
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_welcome);
 
-        if (!checkStoragePermission()) {
-            requestStoragePermission();
-        }
-        PPCompAndroid.getInstance().initBindService();
+        ManageFilesPermissionHelper.requestPermission(this, resultCallback);
 
         Button openButton = findViewById(R.id.open_button);
         Button finishChipButton = findViewById(R.id.finishchip_button);
@@ -506,28 +515,6 @@ public class WelcomeActivity extends AppCompatActivity {
         textView.setText(message);
     }
 
-
-    private boolean checkStoragePermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Log.e("WelcomeActivity", "checkStoragePermission");
-            return Environment.isExternalStorageManager();
-        }
-        return false;
-    }
-
-    private void requestStoragePermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11 及以上，需要手动引导用户授权
-            try {
-                Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-                startActivity(intent);
-                Log.d("WelcomeActivity","requestStoragePermission");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -536,6 +523,6 @@ public class WelcomeActivity extends AppCompatActivity {
 
     protected void onResume() {
         super.onResume();
-        checkStoragePermission(); // 返回后重新检查权限
+        ManageFilesPermissionHelper.onResumeCheck();
     }
 }
