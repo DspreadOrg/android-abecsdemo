@@ -20,9 +20,6 @@ ppcomlibrary/
 |   |   └──user-v1.0.1.aar
 │   ├── build.gradle              # App module build config
 │   └── proguard-rules.pro        # ProGuard rules
-├── dsplib/                       # Core library modules
-│   ├── abecslib/                 # ABECS library integration
-│   └── ppcomlib/                 # PPCom core functionality
 ├── gradle/                       # Gradle wrapper files
 ├── build.gradle                  # Project build config
 └── settings.gradle              # Project settings
