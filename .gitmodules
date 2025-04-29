@@ -1,6 +1,0 @@
-[submodule "dsplib/abecslib"]
-	path = dsplib/abecslib
-	url = http://172.16.10.144:3000/rd_platform/android-wizar-abecs-lib.git
-[submodule "dsplib/ppcomlib"]
-	path = dsplib/ppcomlib
-	url = http://172.16.10.144:3000/rd_platform/android-wizar-ppcom-lib.git
