@@ -1,174 +1,238 @@
-# PPComLibrary
+# Introduction
 
-## Introduction
 PPComLibrary is an Android library project for payment terminal integration based on the Abecs protocol. It provides comprehensive PIN pad communication and EMV transaction functionalities, enabling seamless integration with payment terminals and handling various payment processing tasks.
 
-## Project Structure
-```
-ppcomlibrary/
-├── app/                           # Main application module
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/             # Source code
-│   │   │   ├── res/              # Resources
-│   │   │   └── AndroidManifest.xml
-|   |──libs/
-|   |   ├──BCPP_E5855-Dspread_release.aar
-|   |   ├──bas-v1.0.0.aar
-|   |   ├──cloudpossdkV1.5.4.33_Standard.aar #Abecs protocol inheritance library
-|   |   ├──files-v1.0.3.aar
-|   |   └──user-v1.0.1.aar
-│   ├── build.gradle              # App module build config
-│   └── proguard-rules.pro        # ProGuard rules
-├── gradle/                       # Gradle wrapper files
-├── build.gradle                  # Project build config
-└── settings.gradle              # Project settings
-```
+This document introduces the system architecture, core components, developemet environment, integration process of Android ABECS Demo ,and developemet guide. For more information, please refer to the corresponding chapters:
 
-## Features
-### 1. PIN Pad Device Communication
-- Device connection and initialization
-- Status monitoring and event handling
-- Secure communication protocols
-- Real-time device status updates
+- For system architecture part, see [System Architecture](#system-architecture).
+- For core components part, see [Core Components](#core-components).
+- For build environment part, see [Build Environment](#build-environment).
+- For integration flow part, see [Integration Flow](#integration-flow).
+- For developemet guide part, see [Developemet Guide](https://github.com/DspreadOrg/android-abecsdemo/blob/main/Development-Guide.md).
 
-### 2. EMV Transaction Processing
-- Full EMV transaction flow support
-- Chip card handling
-- Contactless payment support
-- Transaction data management
 
-### 3. Card Operations
-- Magnetic stripe card reading
-- EMV chip card operations
-- GetCard operation for retrieving card data
-- GoOnChip for EMV processing
-- FinishChip for transaction completion
+## System Architecture
 
-### 4. Security Operations
-- PIN encryption
-- Secure key management
-- Data encryption
-- Secure communication channels
+The Android ABECS Demo consists of several interconnected components that work together to complete payment and related management operations.
 
-### 5. Table Management
-- AID (Application Identifier) table management
-- CAPK (Certification Authority Public Key) handling
-- Dynamic table updates
-- Configuration management
-
-## Technical Requirements
-- Minimum SDK Version: Android 21 (Lollipop)
-- Target SDK Version: 33 (Android 13)
-- Development Environment: Android Studio
-- Build System: Gradle
-- Java Version: Java 8
-- AndroidX Support
-
-## Required Permissions
-```xml
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+```mermaid
+graph TD
+    A[Android Application<br/>PPComDemo] --> B[Supporting Libraries]
+    A --> C[Permission Management]
+    A --> D[Pinpad Communication<br/>AcessoFuncoesPinpad]        
+    B --> F[files-v1.0.3.aar]
+    B --> G[user-v1.0.1.aar]
+    C --> H[ManageFilePermissionHelper]
+    D --> K[BCPP_E5855-Dspread_release.aar]
 ```
 
-## Installation Steps
-1. Clone the repository:
-```bash
-git clone [repository URL]
-git submodule update --init --recursive
+### Project directory structure
+```
+Abecsdemo/  
+├── app/                           # Main application module  
+│   ├── src/  
+│   │   ├── main/  
+│   │   │   ├── java/              # Java source code  
+│   │   │   │   └── com/dspread/ppcomlibrary/  # Main package  
+│   │   │   │       ├── ui/        # UI components  
+│   │   │   │       ├── BaseAppliction.java    # Application base class  
+│   │   │   │       ├── Formato.java           # Data format definitions  
+│   │   │   │       ├── Geral.java             # Constants definitions  
+│   │   │   │       ├── InterfaceUsuario.java  # User interface implementation  
+│   │   │   │       ├── ManageFilesPermissionHelper.java # File permission management  
+│   │   │   │       ├── Parametro.java         # Parameter definitions  
+│   │   │   │       ├── Tables.java            # AID and CAPK table management  
+│   │   │   │       ├── Tipo.java              # Type definitions  
+│   │   │   │       └── WelcomeActivity.java   # Main interface activity
+│   │   │   ├── res/               # Resource files  
+│   │   │   │   ├── layout/        # Layout files  
+│   │   │   │   │   └── activity_welcome.xml   # Main interface layout  
+│   │   │   │   ├── values/        # Value resources
+│   │   │   └── AndroidManifest.xml # Application manifest file
+│   ├── libs/                      # Dependency libraries  
+│   │   ├── BCPP_E5855-Dspread_release.aar    # Dspread SDK library 
+│   │   ├── files-v1.0.3.aar                  # File operation library  
+│   │   └── user-v1.0.1.aar                   # User-related library
+│   ├── build.gradle               # Application module build configuration  
+│   └── proguard-rules.pro         # ProGuard rules  
+├── gradle/                        # Gradle wrapper files  
+│   └── wrapper/
+├── build.gradle                   # Project build configuration  
+└── gradlew                        # Gradle startup script  
 ```
 
-2. Open the project in Android Studio.
-3. Sync Gradle files.
-4. Build the project.
+## Core Components
+### 1. Permission Management
+The Permission Management system handles Android file system access permissions, which are necessary for the application to read and write configuration files, logs, and other data. The ManageFilesPermissionHelper class simplifies the process of requesting and checking for the MANAGE_EXTERNAL_STORAGE permission on Android 11 and above.
 
-## Dependencies
-### Core Dependencies
-- AndroidX Core KTX - Core Android functionalities
-- AndroidX Lifecycle - Component lifecycle management
-- AndroidX Compose - Modern UI toolkit
-- AndroidX AppCompat - Backward compatibility
-- Material Design Components - UI components
-
-## Usage Guide
-### 1. Permission Handling
-```java
-ManageFilesPermissionHelper.requestPermission(activity, new OnManageAllFilesPermissionResult() {
-    @Override
-    public void onGranted() {
-        // Permission granted, proceed with operations
-    }
-
-    @Override
-    public void onDenied() {
-        // Handle permission denial
-    }
-});
+```mermaid
+flowchart TD
+    A[PPComDemo App] --> B[ManageFilesPermissionHelper]
+    B --> C{Android Version Check}
+    
+    C -->|Android 11+| D{Permission Already Granted?}
+    C -->|Android 10 or below| E[Auto-grant Permission]
+    
+    D -->|No| F[Launch System Settings]
+    D -->|Yes| G[Execute onGranted Callback]
+    
+    F --> H[onResume Check]
+    H --> I{Permission Granted Now?}
+    
+    I -->|Yes| G
+    I -->|No| J[Execute onDenied Callback]
+    
+    E --> G
 ```
 
-### 2. Library Initialization (Binding Service)
-```java
-PPCompAndroid.getInstance().initBindService();
+### 2. Pinpad Communication System
+The Pinpad Communication module centers around the AcessoFuncoesPinpad class which provides an interface to interact with payment terminals. This component handles various payment terminal operations including:
+
+- Opening/closing connections
+- Card data capture
+- PIN entry
+- EMV chip card transactions
+- Contactless card processing
+- EMV Table Management
+- Other
+
+The WelcomeActivity class serves as the demonstration interface, providing buttons to trigger different pinpad operations and display their results.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant WelcomeActivity
+    participant AcessoFuncoesPinpad
+    participant "Payment Terminal"
+
+    User->>WelcomeActivity: Clicks operation button
+    WelcomeActivity->>AcessoFuncoesPinpad: Creates command input object
+    WelcomeActivity->>AcessoFuncoesPinpad: Calls appropriate method
+    AcessoFuncoesPinpad->>+"Payment Terminal": Sends command to terminal
+    "Payment Terminal"-->>-AcessoFuncoesPinpad: Returns results
+    AcessoFuncoesPinpad-->>WelcomeActivity: Executes callback with output
+    WelcomeActivity-->>User: Displays result in AlertDialog
 ```
 
-### 3. Initialize Object
-```java
-AcessoFuncoesPinpad acessoFuncoes = GestaoBibliotecaPinpad.obtemInstanciaAcessoFuncoesPinpad();
+#### 2.1 Supported Operations of Pinpad Communication System
+
+The Android ABECS Demo supports a comprehensive set of payment terminal operations, demonstrated through the interactive interface in WelcomeActivity:
+
+
+| Operation | Description | Method |
+|-----------|-------------|---------|
+| Open | Establishes connection with the pinpad | `acessoFuncoes.open()` |
+| GetCard | Reads card information | `acessoFuncoes.getCard()` |
+| GetPin | Captures PIN entry | `acessoFuncoes.getPin()` |
+| GoOnChip | Processes EMV chip transactions | `acessoFuncoes.goOnChip()` |
+| FinishChip | Completes EMV transaction | `acessoFuncoes.finishChip()` |
+| CheckEvents | Monitors card insertion/removal | `acessoFuncoes.checkEvent()` |
+| TableLoad | Loads EMV configuration tables | `acessoFuncoes.tableLoad()` |
+| EncryptBuffer | Encrypts sensitive data | `acessoFuncoes.encryptBuffer()` |
+| RemoveCard | Prompts for card removal | `acessoFuncoes.removeCard()` |
+| ChipDirect | Direct communication with chip card | `acessoFuncoes.chipDirect()` |
+| Close | Terminates pinpad connection | `acessoFuncoes.close()` |
+
+
+## Development Environment
+The project is built using:
+
+- Gradle build system
+- Java Or Kotlin programming languages
+- AAR libraries for specialized functionality:
+- BCPP_E5855-Dspread_release.aar
+- files-v1.0.3.aar
+- user-v1.0.1.aar
+
+
+```mermaid
+graph TD
+    subgraph Android Application
+        A[WelcomeActivity]
+        B[Command Input Objects]
+        C[AcessoFuncoesPinpad]
+        D[Command Output Objects]
+        
+        A --> B
+        B --> C
+        C --> D
+        D --> A
+    end
+    
+    E[Physical Pinpad Device]
+    F[GestaoBibliotecaPinpad]
+    
+    C --> E
+    E --> C
+    
+    G[ABECS Infrastructure]
+    E --- G
+    F --- G
+    
+    style A fill:#fff,stroke:#333
+    style B fill:#fff,stroke:#333
+    style C fill:#fff,stroke:#333
+    style D fill:#fff,stroke:#333
+    style E fill:#fff,stroke:#333
+    style F fill:#fff,stroke:#333
+    style G fill:#fff,stroke:#333
+```
+## Integration Flow
+The integration mainly includes the creation of Welcome activity and the call of related methods of AcessoFuncoesPinpad
+
+### 1. Create WelcomeActivity
+The WelcomeActivity serves as the main interface for the Android ABECS Demo. It provides buttons for triggering various pinpad operations, such as GetCard, GetPin, GoOnChip, FinishChip, and more. Each button click triggers the corresponding operation in the AcessoFuncoesPinpad class.
+
+### 2. Call the method of  AcessoFuncoesPinpad class
+This component serves as the communication bridge between the application and the physical pinpad device. It:
+
+- Exposes methods for all supported pinpad operations
+- Manages the underlying protocol details
+- Handles command transmission and response processing
+- Is instantiated through GestaoBibliotecaPinpad
+
+
+#### 2.1Command Input/Output Objects
+All pinpad operations use specific input and output command objects:
+
+
+| Operation | Input Object | Output Object | Purpose |
+|-----------|--------------|---------------|----------|
+| Open | `EntradaComandoOpen` | _(via callback)_ | Establish connection with pinpad |
+| GetCard | `EntradaComandoGetCard` | `SaidaComandoGetCard` | Retrieve card information |
+| GetPin | `EntradaComandoGetPin` | `SaidaComandoGetPin` | Capture PIN entry |
+| GoOnChip | `EntradaComandoGoOnChip` | `SaidaComandoGoOnChip` | Process EMV chip transaction |
+| FinishChip | `EntradaComandoFinishChip` | `SaidaComandoFinishChip` | Complete EMV transaction |
+| CheckEvent | `EntradaComandoCheckEvent` | `SaidaComandoCheckEvent` | Monitor for card events |
+| TableLoad | `EntradaComandoTableLoad` | _(via callback)_ | Load EMV configuration tables |
+| EncryptBuffer | `EntradaComandoEncryptBuffer` | `SaidaComandoEncryptBuffer` | Encrypt sensitive data |
+| RemoveCard | `EntradaComandoRemoveCard` | _(via callback)_ | Prompt for card removal |
+| ChipDirect | `EntradaComandoChipDirect` | `SaidaComandoChipDirect` | Send APDU commands to chip |
+| Close | `EntradaComandoClose` | _(via callback)_ | Terminate pinpad connection |
+
+### 3. Operation Flow
+All pinpad operations follow a common pattern:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant WelcomeActivity
+    participant AcessoFuncoesPinpad
+    participant Physical Pinpad
+
+    User->>WelcomeActivity: Trigger operation (button click)
+    
+    Note over WelcomeActivity: Create EntradaComando* object
+    
+    WelcomeActivity->>AcessoFuncoesPinpad: Call operation method
+    AcessoFuncoesPinpad->>Physical Pinpad: Send command
+    Physical Pinpad-->>AcessoFuncoesPinpad: Return results
+    AcessoFuncoesPinpad-->>WelcomeActivity: Execute callback with SaidaComando*
+    
+    Note over WelcomeActivity: Process results
+    
+    WelcomeActivity->>User: Display results in AlertDialog
 ```
 
-### 4. Basic Operations
-#### Device Connection
-```java
-// Open device connection
-acessoFuncoes.open();
-
-// Close device connection
-acessoFuncoes.close();
-```
-
-#### Retrieve Device Information
-```java
-// Get device status
-acessoFuncoes.getInfo();
-```
-
-#### Card Operations
-```java
-// Retrieve card information
-acessoFuncoes.getCard();
-
-// Process chip card
-acessoFuncoes.goOnChip();
-
-// Complete transaction
-acessoFuncoes.finishChip();
-```
-
-#### Table Management
-```java
-// Load AID/CAPK tables
-acessoFuncoes.tableLoad();
-```
-
-#### Data Encryption
-```java
-// Encrypt data
-acessoFuncoes.encryptData();
-```
-
-#### Check Card Removal
-```java
-// Check if card is inserted
-acessoFuncoes.removeCard();
-```
-
-#### Card Communication
-```java
-// Card communication
-acessoFuncoes.chipDirect();
-```
-
-## Technical Support
-For technical support or any questions, please contact:
-- Email: zhanghaibiao@mail.dspread.com
+## Developemet Guide
+- For developemet guide details, please see [Developemet Guide](https://github.com/DspreadOrg/android-abecsdemo/blob/main/Development-Guide.md).
