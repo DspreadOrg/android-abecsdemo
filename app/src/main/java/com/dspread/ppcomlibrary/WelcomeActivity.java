@@ -104,6 +104,7 @@ public class WelcomeActivity extends AppCompatActivity {
         Button chipDirectButton = findViewById(R.id.chipdirect_button);
         Button encryptBuffer = findViewById(R.id.encryptBuffer_button);
         Button abortButton = findViewById(R.id.abort_button);
+        Button newTestButton = findViewById(R.id.newtest_button);
         textView = findViewById(R.id.display_textview);
         //  new  DeviceAbecs()
         try {
@@ -459,6 +460,14 @@ public class WelcomeActivity extends AppCompatActivity {
             public void onClick(View view) {
                 parametros = new ArrayList<>();
                 acessoFuncoes.abort();
+            }
+        });
+
+        newTestButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view){
+                Intent intent = new Intent(WelcomeActivity.this, NewTestActivity.class);
+                startActivity(intent);
             }
         });
     }

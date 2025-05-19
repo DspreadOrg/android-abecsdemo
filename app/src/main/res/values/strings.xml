@@ -14,4 +14,7 @@
     <string name="action_chipdirect">ChipDirect</string>
     <string name="action_abort">Abort</string>
     <string name="defaultMsgTxt">SETIS</string>
+    <string name="new_test">New Test</string>
+    <string name="mksk_state">MKSK State</string>
+    <string name="dukpt_state">DUKPT State</string>
 </resources>
