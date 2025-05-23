@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#e5e5e5"
+    android:orientation="vertical">
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/linearLayout_null_space"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="0dp"-->
+<!--        android:layout_weight="1"-->
+<!--        android:layout_marginTop="0dp"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:orientation="vertical">-->
+
+<!--    </LinearLayout>-->
+
+    <LinearLayout
+        android:id="@+id/linearLayout_tip_sapce"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_gravity="center"
+        android:layout_marginTop="0dp"
+        android:layout_marginBottom="0dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/keyboard_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="30dp"
+            android:text="@string/inputpin_title"
+            android:textColor="#666666"
+            android:textSize="18sp"
+            android:textStyle="bold">
+        </TextView>
+
+        <TextView
+            android:id="@+id/keyboard_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="30dp"
+            android:text=""
+            android:textColor="#666666"
+            android:textSize="18sp"
+            android:textStyle="bold">
+        </TextView>
+
+        <EditText
+            android:id="@+id/keyboard_showpin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+            android:background="@drawable/my_edittext_selector"
+            android:gravity="center_horizontal"
+            android:text=""
+            android:textColor="#666666"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:layout_margin="3dp">
+        </EditText>
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/keyboard_top_rl"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="SECURE PIN PAD"
+            android:textColor="#666666"
+            android:textSize="14dp" />
+
+        <!--        <TextView-->
+        <!--            android:layout_width="wrap_content"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:layout_alignParentEnd="true"-->
+        <!--            android:layout_alignParentRight="true"-->
+        <!--            android:layout_centerVertical="true"-->
+        <!--            android:padding="10dp"-->
+        <!--            android:text="Cancel"-->
+        <!--            android:textStyle="bold"-->
+        <!--            android:textSize="16dp"-->
+        <!--            android:textColor="#0080f3"/>-->
+    </RelativeLayout>
+
+    <com.dspread.ppcomlibrary.keyboard.MyKeyboardView
+        android:id="@+id/keyboard_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/keyboard_back_color"
+        android:focusable="true"
+        android:keyBackground="@drawable/my_keyboard_keybg_white"
+        android:keyPreviewOffset="0dp"
+        android:keyTextColor="@color/keyboard_text_color"
+        android:keyTextSize="20dp"
+        android:paddingBottom="6dp"
+        android:shadowColor="#FFFFFF"
+        android:shadowRadius="0.0"
+        android:layout_margin="3dp"
+        android:layout_gravity="bottom"/>
+
+</LinearLayout>
+

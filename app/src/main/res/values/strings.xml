@@ -17,4 +17,5 @@
     <string name="new_test">New Test</string>
     <string name="mksk_state">MKSK State</string>
     <string name="dukpt_state">DUKPT State</string>
+    <string name="inputpin_title">Please Input Pin</string>
 </resources>

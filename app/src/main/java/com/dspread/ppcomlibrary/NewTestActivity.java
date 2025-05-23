@@ -36,6 +36,9 @@ public class NewTestActivity extends AppCompatActivity {
                     dispText = "key of mksk at index ["+ mkskIndex + "] was not loaded.";
                 }
                 textView.setText(dispText);
+
+                DeviceAbecs deviceAbecs = DeviceAbecs.getInstance();
+                deviceAbecs.getMkskKeyStatus(0);
             }
         });
 

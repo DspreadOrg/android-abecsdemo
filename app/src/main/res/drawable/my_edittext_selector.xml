@@ -1,0 +1,21 @@
+<!-- res/drawable/edittext_selector.xml -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 聚焦状态 -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <stroke
+                android:width="3dp"
+                android:color="#363333" /> <!-- 蓝色边框 -->
+            <corners android:radius="0dp" />
+        </shape>
+    </item>
+    <!-- 默认状态 -->
+    <item>
+        <shape android:shape="rectangle">
+            <stroke
+                android:width="3dp"
+                android:color="#363333" /> <!-- 红色边框 -->
+            <corners android:radius="0dp" />
+        </shape>
+    </item>
+</selector>

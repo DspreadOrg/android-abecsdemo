@@ -78,6 +78,8 @@ public class WelcomeActivity extends AppCompatActivity {
         public void onGranted() {
             Log.e(this.getClass().getName(), "already get permission");
             PPCompAndroid.getInstance().initBindService();
+            PPCompAndroid.setEnterPinListener(new AbecsPinEnterListener(WelcomeActivity.this));
+            PPCompAndroid.setEMVEventListener(new AbecsEventListener(WelcomeActivity.this, textView));
         }
 
         @Override
@@ -89,8 +91,6 @@ public class WelcomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_welcome);
-
-        ManageFilesPermissionHelper.requestPermission(this, resultCallback);
 
         Button openButton = findViewById(R.id.open_button);
         Button finishChipButton = findViewById(R.id.finishchip_button);
@@ -106,6 +106,8 @@ public class WelcomeActivity extends AppCompatActivity {
         Button abortButton = findViewById(R.id.abort_button);
         Button newTestButton = findViewById(R.id.newtest_button);
         textView = findViewById(R.id.display_textview);
+
+        ManageFilesPermissionHelper.requestPermission(this, resultCallback);
         //  new  DeviceAbecs()
         try {
             acessoFuncoes = GestaoBibliotecaPinpad.obtemInstanciaAcessoFuncoesPinpad();
