@@ -10,6 +10,7 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -26,14 +27,23 @@ import br.com.setis.bibliotecapinpad.definicoes.TipoNotificacao;
 class InterfaceUsuario implements InterfaceUsuarioPinpad {
 
     private Context context;
+    private TextView mTextView;
 
-    public InterfaceUsuario(Context context) {
+    public InterfaceUsuario(Context context, TextView textView) {
         this.context = context;
+        mTextView = textView;
     }
 
     @Override
     public void mensagemNotificacao(String s, TipoNotificacao tipoNotificacao) {
-        showMessage(s);
+        String displayMsg;
+        if(tipoNotificacao == TipoNotificacao.DSP_2X16){
+            displayMsg = s.substring(0,16)+"\n"+s.substring(16,s.length());
+        }
+        else{
+            displayMsg = s;
+        }
+        showMessage(displayMsg);
 
     }
 
@@ -57,7 +67,7 @@ class InterfaceUsuario implements InterfaceUsuarioPinpad {
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                WelcomeActivity.showMessage(message);
+                mTextView.setText(message);
             }
         });
     }
@@ -111,7 +121,9 @@ class InterfaceUsuario implements InterfaceUsuarioPinpad {
                     }
                 });
 
-                dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+
+                dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_APPLICATION);
+                //dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
                 dialog.setCanceledOnTouchOutside(true);
                 dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
 
@@ -120,8 +132,8 @@ class InterfaceUsuario implements InterfaceUsuarioPinpad {
                         menu.obtemMenuCallback().informaOpcaoSelecionada(0);
                     }
                 });
-                //dialog.show();
-                menu.obtemMenuCallback().informaOpcaoSelecionada(1);
+                dialog.show();
+                //menu.obtemMenuCallback().informaOpcaoSelecionada(1);
 
             }
         });

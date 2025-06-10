@@ -470,5 +470,25 @@ public class POSUtil {
         }
     }
 
+    public static byte[] asciiHexToBytes(byte[] asciiHex) {
+        if (asciiHex.length % 2 != 0) {
+            throw new IllegalArgumentException("Input length must be even");
+        }
+
+        int len = asciiHex.length / 2;
+        byte[] result = new byte[len];
+
+        for (int i = 0; i < len; i++) {
+            int high = Character.digit((char) asciiHex[2 * i], 16);
+            int low = Character.digit((char) asciiHex[2 * i + 1], 16);
+            if (high == -1 || low == -1) {
+                throw new IllegalArgumentException("Invalid hex digit");
+            }
+            result[i] = (byte) ((high << 4) + low);
+        }
+
+        return result;
+    }
+
 
 }

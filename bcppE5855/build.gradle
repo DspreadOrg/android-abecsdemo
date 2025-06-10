@@ -1,0 +1,81 @@
+import java.util.jar.JarFile
+
+plugins {
+    id 'com.android.library'
+}
+
+def getDependencyVersion(String dependencyNotation) {
+    return dependencies.create(dependencyNotation).version
+}
+def IMPLEMENTATION_TITLE   = "BCPP_E5855-Dspread"
+def IMPLEMENTATION_VERSION = "1.1"
+
+def ABECS_PROCESS_JAR_NAME= 'abecs_1.1.1.jar'
+def PPCOM_PROCESS_JAR_NAME = 'libPPCompDspV007.so.jar'
+
+
+// 定义获取JAR版本的方法（放在android块外）
+def getJarVersion(String jarPath) {
+    def jarFile = file(jarPath)
+    try {
+        def manifest = new JarFile(jarFile).manifest
+        return manifest.mainAttributes.getValue('Implementation-Version') ?:
+                manifest.mainAttributes.getValue('Bundle-Version') ?:
+                        "UNKNOWN"
+    } catch (Exception e) {
+        logger.warn("无法解析JAR版本: ${e.message}")
+        return "UNKNOWN"
+    }
+}
+
+android {
+    namespace 'br.com.setis.bcw9'
+    compileSdk 34
+
+    buildFeatures {
+        buildConfig true  // 启用 BuildConfig 生成
+    }
+
+
+    defaultConfig {
+        minSdk 21
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+
+        buildConfigField "String", "BUILD_TIMESTAMP", "\"${new Date().format('yyyy-MM-dd HH:mm:ss')}\""
+        buildConfigField "String", "APPLICATION_ID", "\"${namespace}\""
+        buildConfigField "String", "FLAVOR", "\"\""
+        buildConfigField "String", "VERSION_NAME", "\"${IMPLEMENTATION_VERSION}-${getJarVersion("libs\\${PPCOM_PROCESS_JAR_NAME}")}-${getJarVersion("libs\\${ABECS_PROCESS_JAR_NAME}")}\""
+        buildConfigField "String", "VERSION_CODE", "\"1\""
+    }
+
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.10.0'
+    api files('libs\\ppcomp_android_lib.jar')
+    //implementation files("libs\\${ABECS_PROCESS_JAR_NAME}")
+    //api files("libs\\${PPCOM_PROCESS_JAR_NAME}")
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    api files(files('libs\\files-v1.0.3.aar'))
+    api files(files('libs\\user-v1.0.1.aar'))
+//    api files(files('libs\\bas-v1.0.0.aar'))
+    //api files(files('libs\\libPPComDspV007.aar'))
+    api fileTree(dir: 'libs', include: ['libPPComDsp*.aar'])
+
+}

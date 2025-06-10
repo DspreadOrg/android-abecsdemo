@@ -3,16 +3,11 @@ package com.dspread.ppcomlibrary;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -26,11 +21,9 @@ import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import br.com.setis.bcw9.DeviceAbecs;
+
+import br.com.setis.bcw9.DeviceSerial;
 import br.com.setis.bcw9.PPCompAndroid;
-import br.com.setis.bcw9.Util;
 import br.com.setis.bibliotecapinpad.AcessoFuncoesPinpad;
 import br.com.setis.bibliotecapinpad.GestaoBibliotecaPinpad;
 import br.com.setis.bibliotecapinpad.conversoresEntradaSaida.util.Utils;
@@ -63,6 +56,8 @@ import br.com.setis.bibliotecapinpad.saidas.SaidaComandoGoOnChip;
 import static com.dspread.ppcomlibrary.Tables.aidTablesValues;
 import static com.dspread.ppcomlibrary.Tables.capkTablesValues;
 
+//import com.dspread.dsplibrary.DeviceAbecsConstant;
+
 
 public class WelcomeActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_STORAGE_PERMISSION = 1000;
@@ -77,9 +72,7 @@ public class WelcomeActivity extends AppCompatActivity {
         @Override
         public void onGranted() {
             Log.e(this.getClass().getName(), "already get permission");
-            PPCompAndroid.getInstance().initBindService();
-            PPCompAndroid.setEnterPinListener(new AbecsPinEnterListener(WelcomeActivity.this));
-            PPCompAndroid.setEMVEventListener(new AbecsEventListener(WelcomeActivity.this, textView));
+            PPCompAndroid.getInstance().initBindService("D30M");
         }
 
         @Override
@@ -87,6 +80,7 @@ public class WelcomeActivity extends AppCompatActivity {
             Log.e(this.getClass().getName(), "no permission granted");
         }
     };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -123,7 +117,7 @@ public class WelcomeActivity extends AppCompatActivity {
                 parametros = new ArrayList<>();
                 //Toast.makeText(WelcomeActivity.this, "Click OPEN", Toast.LENGTH_SHORT).show();
 
-                EntradaComandoOpen entrada = new EntradaComandoOpen(new InterfaceUsuario(WelcomeActivity.this));
+                EntradaComandoOpen entrada = new EntradaComandoOpen(new InterfaceUsuario(WelcomeActivity.this, textView));
                 acessoFuncoes.open(entrada, new EntradaComandoOpen.OpenCallback() {
                     @Override
                     public void comandoOpenEncerrado(CodigosRetorno codigosRetorno) {
@@ -535,5 +529,10 @@ public class WelcomeActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         ManageFilesPermissionHelper.onResumeCheck();
+    }
+
+    protected void onDestroy() {
+        super.onDestroy();
+
     }
 }

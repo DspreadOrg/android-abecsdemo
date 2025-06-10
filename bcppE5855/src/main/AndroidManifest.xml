@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.CLOUDPOS_PINPAD" />
+    <uses-permission android:name="android.permission.CLOUDPOS_PIN_GET_PIN_BLOCK" />
+    <uses-permission android:name="android.permission.CLOUDPOS_PIN_MAC" />
+    <uses-permission android:name="android.permission.CLOUDPOS_PIN_ENCRYPT_DATA" />
+    <uses-permission android:name="android.permission.CLOUDPOS_PIN_UPDATE_USER_KEY" />
+    <uses-permission android:name="android.permission.CLOUDPOS_PIN_UPDATE_MASTER_KEY" />
+    <uses-permission android:name="android.permission.CLOUDPOS_SMARTCARD" />
+    <uses-permission android:name="android.permission.CLOUDPOS_MSR" />
+    <uses-permission android:name="android.permission.CLOUDPOS_CONTACTLESS_CARD" />
+    <uses-permission android:name="android.permission.CLOUDPOS_SAFE_MODULE" />
+    <uses-permission android:name="android.permission.CLOUDPOS_SAFE_MODULE_READONLY" />
+    <uses-permission android:name="android.permission.CLOUDPOS_READ_HWSECURITYMANAGER" />
+    <uses-permission android:name="android.permission.CLOUDPOS_LED" />
+    <uses-permission android:name="android.permission.WIZARPOS_LED" />
+    <uses-permission android:name="android.permission.WIZARPOS_SAFE_MODULE" />
+    <uses-permission android:name="android.permission.WIZARPOS_SAFE_MODULE_READONLY" />
+    <uses-permission android:name="android.permission.WIZARPOS_READ_HWSECURITYMANAGER" />
+    <uses-permission android:name="android.permission.WIZARPOS_CONTACTLESS_CARD" />
+
+    <application android:allowBackup="true">
+        <activity android:name="br.com.setis.bcw9.Display" />
+
+        <provider
+            android:name="br.com.setis.bcw9.Content"
+            android:authorities="${applicationId}.acessofuncoespinpad"
+            android:enabled="true"
+            android:exported="false" />
+    </application>
+
+</manifest>

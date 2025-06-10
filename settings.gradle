@@ -16,4 +16,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "PPComDemo"
 include ':app'
+include ':bcppE5855'
 
