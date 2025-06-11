@@ -163,25 +163,5 @@ afterEvaluate
                 from "libs/${userAarFileName}.aar"
                 into "../app/libs/"
 
-                doLast {
-
-                    def appDir = file("../app")
-                    def buildGradle = new File(appDir, "build.gradle")
-                    def buildGradleOther = new File(appDir, "build.gradle.other")
-
-                    if (buildGradle.exists()) {
-                        new File(appDir, "build.gradle.bak").delete()
-                        buildGradle.renameTo(new File(appDir, "build.gradle.bak"))
-                        println "Renamed build.gradle -> build.gradle.bak"
-                    }
-
-                    if (buildGradleOther.exists()) {
-                        buildGradleOther.renameTo(buildGradle)
-                        println "Renamed build.gradle.other -> build.gradle"
-                    } else {
-                        println "Warning: build.gradle.other does not exist."
-                    }
-                }
-
             }
         }
