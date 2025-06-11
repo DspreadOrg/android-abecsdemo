@@ -1,0 +1,187 @@
+import java.util.jar.JarFile
+
+plugins {
+    id 'com.android.library'
+}
+
+def getDependencyVersion(String dependencyNotation) {
+    return dependencies.create(dependencyNotation).version
+}
+def IMPLEMENTATION_TITLE   = "BCPP_E5855-Dspread"
+
+
+def dspAarFileName = "libPPComDspV007"
+def filesAarFileName = "files-v1.0.3"
+def userAarFileName = "user-v1.0.1"
+
+def dspAARFile = file("libs/${dspAarFileName}.aar")
+def unzipDir  = "libs/unzipped-aars"
+
+
+//  Method to get JAR version from manifest (placed outside android block)
+def getJarVersion(String jarPath) {
+    def jarFile = file(jarPath)
+    try {
+        def manifest = new JarFile(jarFile).manifest
+        return manifest.mainAttributes.getValue('Implementation-Version') ?:
+                manifest.mainAttributes.getValue('Bundle-Version') ?:
+                        "UNKNOWN"
+    } catch (Exception e) {
+        logger.warn("Failed to parse JAR version: ${e.message}")
+        return "UNKNOWN"
+    }
+}
+
+android {
+    namespace 'br.com.setis.bcw9'
+    compileSdk 34
+
+    buildFeatures {
+        buildConfig true  // Enable BuildConfig generation
+    }
+
+
+    defaultConfig {
+        minSdk 21
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+
+        buildConfigField "String", "BUILD_TIMESTAMP", "\"${new Date().format('yyyy-MM-dd HH:mm:ss')}\""
+        buildConfigField "String", "APPLICATION_ID", "\"${namespace}\""
+        buildConfigField "String", "FLAVOR", "\"\""
+        //buildConfigField "String", "VERSION_NAME", "\"${IMPLEMENTATION_VERSION}-${getJarVersion("libs\\${PPCOM_PROCESS_JAR_NAME}")}-${getJarVersion("libs\\${ABECS_PROCESS_JAR_NAME}")}\""
+        buildConfigField "String", "VERSION_CODE", "\"1\""
+    }
+
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.10.0'
+    api files('libs\\ppcomp_android_lib.jar')
+    //implementation files("libs\\${ABECS_PROCESS_JAR_NAME}")
+    //api files("libs\\${PPCOM_PROCESS_JAR_NAME}")
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    //api files(files('libs\\files-v1.0.3.aar'))
+    //api files(files('libs\\user-v1.0.1.aar'))
+    //api fileTree(dir: 'libs', include: ['libPPComDsp*.aar'])
+    //compileOnly(fileTree(dir: 'libs', include: ['libPPComDsp*.aar']))
+    compileOnly(files("libs\\${filesAarFileName}.aar"))
+    compileOnly(files("libs\\${userAarFileName}.aar"))
+    api files("libs\\${dspAarFileName}.jar")
+}
+
+
+// Custom tasks
+afterEvaluate
+        {
+            task upzipAarFile1(type: Copy) {
+                outputs.upToDateWhen { false }
+                def outputDir1 = file("${unzipDir}/${dspAarFileName}.aar")
+                doFirst {
+                    delete outputDir1
+                    outputDir1.mkdirs()
+                }
+
+                println "try to unzip AAR file: ${dspAARFile.name}"
+                if (dspAARFile.exists()) {
+                    println "unziping AAR file: ${dspAARFile.name}"
+                    from zipTree(dspAARFile)
+                    into outputDir1
+                } else {
+                    println "error: AAR file not found - ${dspAARFile.path}"
+                }
+            }
+
+            task upzipAarFile2(type: Copy) {
+                outputs.upToDateWhen { false }
+                dependsOn upzipAarFile1
+                doFirst {
+                    delete "libs/${dspAarFileName}.jar"
+                }
+
+                from "${unzipDir}/${dspAarFileName}.aar/classes.jar"
+                rename { fileName -> "${dspAarFileName}.jar" }
+                into "libs"
+            }
+
+            task upzipAarFile(type: Copy) {
+                dependsOn upzipAarFile2
+                outputs.upToDateWhen { false }
+
+                doFirst {
+                    delete "src/main/jniLibs"
+                }
+
+                from "${unzipDir}/${dspAarFileName}.aar/jni"
+                into "src/main/jniLibs"
+
+                doLast {
+                    println "delete unziping AAR file"
+                    delete "${unzipDir}"
+                }
+            }
+
+            task makeAAR {
+                dependsOn assembleRelease
+                outputs.upToDateWhen { false }
+                doLast {
+                    def dir = file("build/outputs/aar") // Output folder
+                    def oldFile = new File(dir, "${project.name}-release.aar")
+                    def newFile = new File(dir, "${IMPLEMENTATION_TITLE}-release.aar")
+                    if (newFile.exists())
+                        newFile.delete()
+                    oldFile.renameTo(newFile)
+                }
+            }
+
+            task buildBCPPAar(type: Copy) {
+                dependsOn makeAAR
+
+                outputs.upToDateWhen { false }
+                doFirst {
+                    delete "../app/libs/"
+                }
+                from "build/outputs/aar/${IMPLEMENTATION_TITLE}-release.aar"
+                into "../app/libs"
+                from "libs/${filesAarFileName}.aar"
+                into "../app/libs/"
+                from "libs/${userAarFileName}.aar"
+                into "../app/libs/"
+
+                doLast {
+
+                    def appDir = file("../app")
+                    def buildGradle = new File(appDir, "build.gradle")
+                    def buildGradleOther = new File(appDir, "build.gradle.other")
+
+                    if (buildGradle.exists()) {
+                        new File(appDir, "build.gradle.bak").delete()
+                        buildGradle.renameTo(new File(appDir, "build.gradle.bak"))
+                        println "Renamed build.gradle -> build.gradle.bak"
+                    }
+
+                    if (buildGradleOther.exists()) {
+                        buildGradleOther.renameTo(buildGradle)
+                        println "Renamed build.gradle.other -> build.gradle"
+                    } else {
+                        println "Warning: build.gradle.other does not exist."
+                    }
+                }
+
+            }
+        }
