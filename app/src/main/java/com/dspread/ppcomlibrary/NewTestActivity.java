@@ -1,6 +1,7 @@
 package com.dspread.ppcomlibrary;
 
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -9,9 +10,9 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.dspread.dsplibrary.DeviceAbecs;
 import com.dspread.ppcomlibrary.utils.POSUtil;
 import com.dspread.ppcomlibrary.utils.SecureAbecsCommand;
+import com.dspread.dsplibrary.AbecsKeyInfo;
 
 import java.util.Arrays;
 
@@ -33,33 +34,50 @@ public class NewTestActivity extends AppCompatActivity {
         Button dukptStateButton = findViewById(R.id.dukptstate_button);
         Button serializeButton = findViewById(R.id.serialtest_button);
         textView = findViewById(R.id.newtest_display_textview);
+        textView.setMovementMethod(new ScrollingMovementMethod());
+        textView.setTextSize(18);
 
         mkskStateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                int keyState = PPCompAndroid.getMkskKeyState(mkskIndex);
-                if(keyState == 0){
-                    dispText = "key of mksk at index ["+ mkskIndex + "] has been loaded.";
+                dispText = "";
+                AbecsKeyInfo.MKSK_Key_Info mkskKeyInfo= PPCompAndroid.getMkskKeyState(mkskIndex);
+                if(mkskKeyInfo.getDataKeyState() == 0){
+                    dispText += "data key of mksk at index ["+ mkskIndex + "] has been loaded.";
                 }
                 else{
-                    dispText = "key of mksk at index ["+ mkskIndex + "] was not loaded.";
+                    dispText += "data key of mksk at index ["+ mkskIndex + "] was not loaded.";
                 }
-                textView.setText(dispText);
-                PPCompAndroid.getMkskKeyState(0);
+                if(mkskKeyInfo.getPinKeyState() == 0){
+                    dispText += "\npin key of mksk at index ["+ mkskIndex + "] has been loaded.";
+                }
+                else{
+                    dispText += "\npin key of mksk at index ["+ mkskIndex + "] was not loaded.";
+                }
+                showMessage(dispText);
             }
         });
         dukptStateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                DeviceAbecs.Dukpt_Key_Info dukptKeyInfo =PPCompAndroid.getDukptKeyState(dukptIndex);
-                if(dukptKeyInfo.getDukptStatus() == 0){
-                    dispText = "key of dukpt at index ["+ dukptIndex + "] has been loaded.";
-                    dispText += "\nksn is "+dukptKeyInfo.getDukptKsn();
+                dispText = "";
+                AbecsKeyInfo.Dukpt_Key_Info dukptKeyInfo = PPCompAndroid.getDukptKeyState(dukptIndex);
+                Log.d("NewTestActivity", "dukptKeyInfo: "+dukptKeyInfo);
+                if(dukptKeyInfo.getDataKeyState() == 0){
+                    dispText += "data key of dukpt at index ["+ dukptIndex + "] has been loaded.";
+                    dispText += "\nksn is "+dukptKeyInfo.getDataKsn();
                 }
                 else{
-                    dispText = "key of dukpt at index ["+ dukptIndex + "] was not loaded.";
+                    dispText += "data key of dukpt at index ["+ dukptIndex + "] was not loaded.";
                 }
-                textView.setText(dispText);
+                if(dukptKeyInfo.getPinKeyState() == 0){
+                    dispText += "\npin key of dukpt at index ["+ dukptIndex + "] has been loaded.";
+                    dispText += "\nksn is "+dukptKeyInfo.getPinKsn();
+                }
+                else{
+                    dispText += "\npin key of dukpt at index ["+ dukptIndex + "] was not loaded.";
+                }
+                showMessage(dispText);
             }
         });
 
@@ -75,7 +93,7 @@ public class NewTestActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-
+                dispText = "";
                 deviceSerial = new DeviceSerial(new InterfaceUsuario(NewTestActivity.this, textView));
                 //OPN command test
                 String opn ="164F504E17A8A9";

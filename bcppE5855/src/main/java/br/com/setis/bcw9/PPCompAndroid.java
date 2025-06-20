@@ -8,6 +8,8 @@ import android.util.Log;
 import br.com.setis.bcw9.abecs.output.AbecsFinishExecOutput;
 import br.com.setis.bcw9.abecs.output.AbecsGetRespOutput;
 import br.com.setis.bcw9.abecs.output.AbecsLookRespOutput;
+
+import com.dspread.dsplibrary.AbecsKeyInfo;
 import com.dspread.dsplibrary.DeviceAbecs;
 import com.dspread.dsplibrary.interfaces.CustomEMVEventListener;
 import com.dspread.dsplibrary.interfaces.CustomPinEnterListener;
@@ -61,13 +63,9 @@ public class PPCompAndroid {
 
 
     public int PP_Open() {
-        /*  53 */
-        byte[] in = new byte[2];
-        /*  54 */
-        byte[] out = new byte[1];
-        // return ppcompMsg(0, new byte[100], new byte[100]);
-        mDeviceAbecs.PP_Open();
-        return 0;
+        byte[] in = new byte[100];
+        byte[] out = new byte[100];
+        return mDeviceAbecs.ppcompMsg(0, in, out);
     }
 
 
@@ -386,11 +384,11 @@ public class PPCompAndroid {
     public static native int abecsCheckPropCmd();
     /*     */
 
-    public static int getMkskKeyState(int keyIndex) {
+    public static AbecsKeyInfo.MKSK_Key_Info getMkskKeyState(int keyIndex) {
         return mDeviceAbecs.getMkskKeyStatus(keyIndex);
     }
 
-    public static DeviceAbecs.Dukpt_Key_Info getDukptKeyState(int keyIndex) {
+    public static AbecsKeyInfo.Dukpt_Key_Info getDukptKeyState(int keyIndex) {
         return mDeviceAbecs.getDukptKeyInfo(keyIndex);
     }
 
