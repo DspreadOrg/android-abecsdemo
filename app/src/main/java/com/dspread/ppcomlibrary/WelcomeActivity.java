@@ -233,7 +233,7 @@ public class WelcomeActivity extends AppCompatActivity {
                 EntradaComandoGoOnChip entradaComandoGoOnChip = new EntradaComandoGoOnChip.Builder(4, ModoCriptografia.MK_WK_3DES, 1)
                         .informaForcaTransacaoOnline(false)
                         .informaPanNaListaExcecao(false)
-                        .informaWorkingKey("000000000000000000000000".getBytes())
+                        .informaWorkingKey("00000000000000000000000000000000".getBytes())
                         .informaValorTotal(100)
                         .informaValorTroco(0)
                         .informaPermiteBypass(false)
