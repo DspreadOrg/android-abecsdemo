@@ -1,9 +1,11 @@
 package com.dspread.ppcomlibrary.utils;
 import android.util.Log;
 
+import com.dspread.dsplibrary.posUtil.Tip;
+
 import java.util.Arrays;
 
-public class SecureAbecsCommand {
+public class AbecsCommand {
     private static byte[] aseKey ;
     private static RSA testRSA;
 
@@ -11,7 +13,7 @@ public class SecureAbecsCommand {
         return aseKey;
     }
     public static void setAseKey(byte[] aseKey) {
-        SecureAbecsCommand.aseKey = aseKey;
+        AbecsCommand.aseKey = aseKey;
     }
 
 
@@ -34,7 +36,7 @@ public class SecureAbecsCommand {
         return crc & 0xFFFF; // 确保返回的CRC是16位
     }
 
-    public static byte[] packOPNCommand() {
+    public static byte[] packSecOPNCommand() {
 
         //pack sec opn command data
         testRSA = new RSA();
@@ -80,7 +82,7 @@ public class SecureAbecsCommand {
         return Arrays.copyOfRange(sec_opn_bytes2, 0, sec_opn_len2);
     }
 
-    public static int checkOPNCommand(byte[] data) {
+    public static int checkSecOPNCommand(byte[] data) {
 
         byte[] decryptedData = Arrays.copyOfRange(data, 13, 13 + 512);
 //                        byte[] decryptedData2= POSUtil.asciiHexToBytes(decryptedData);
@@ -88,18 +90,58 @@ public class SecureAbecsCommand {
 //                        Log.d("NewTestActivity", "need decryptedData: "+ POSUtil.byteArray2Hex(decryptedData2));
 //                        Log.d("NewTestActivity", "need decryptedData:222 "+ decryptedData2[0]+","+ decryptedData2[decryptedData2.length-1]);
         byte[] randomKey = testRSA.decryptWithPrivateKey(POSUtil.asciiHexToBytes(decryptedData));
-        SecureAbecsCommand.setAseKey(randomKey);
-        Log.d("SecureAbecsCommand", "randomKey: " + POSUtil.byteArray2Hex(randomKey));
+        AbecsCommand.setAseKey(randomKey);
+        Log.d("AbecsCommand", "randomKey: " + POSUtil.byteArray2Hex(randomKey));
 
         if (new String(Arrays.copyOfRange(data, 1, 4)).equals("OPN")
                 && new String(Arrays.copyOfRange(data, 4, 7)).equals("000") && randomKey != null) {
             return 0;
         }
 
-        Log.d("SecureAbecsCommand", "get randomKey fail ");
+        Log.d("AbecsCommand", "get randomKey fail ");
 
 
         return -1;
+    }
+
+    public static byte[] packommand(byte[] data) {
+
+        if(data == null){
+            return null;
+        }
+
+        byte[] packCmdBytes = new byte[1024];
+        byte[] packCmdConvertBytes = new byte[1024];
+        int packCmdLen = 0;
+        int packCmdConvertLen = 0;
+        packCmdBytes[packCmdLen++] = 0x16;
+        System.arraycopy(data, 0, packCmdBytes, packCmdLen, data.length);
+        packCmdLen += data.length;
+        packCmdBytes[packCmdLen++] = 0x17;
+
+        byte[] clcrc = Arrays.copyOfRange(packCmdBytes, 1, packCmdLen);
+        Tip.d("AbecsCommand", "pack crc bytes: " + POSUtil.byteArray2Hex(clcrc));
+        int crc = ccitt_crc16(clcrc, clcrc.length,0);
+
+        packCmdConvertBytes[packCmdConvertLen++] = 0x16;
+        for(int i = 1; i<packCmdLen-1; i++){
+            if(packCmdBytes[i] == 0x17 || packCmdBytes[i] == 0x16 || packCmdBytes[i] == 0x13){
+                packCmdConvertBytes[packCmdConvertLen++] = 0x13;
+                packCmdConvertBytes[packCmdConvertLen++] = (byte)(packCmdBytes[i]+0x20);
+            }
+            else{
+                packCmdConvertBytes[packCmdConvertLen++] = packCmdBytes[i];
+            }
+        }
+
+        packCmdConvertBytes[packCmdConvertLen++] = 0x17;
+        packCmdConvertBytes[packCmdConvertLen++] = (byte)((crc&0xFF00) >>8);
+        packCmdConvertBytes[packCmdConvertLen++] = (byte)((crc&0x00FF));
+
+
+        Log.d("AbecsCommand", "final command bytes: " + POSUtil.byteArray2Hex(Arrays.copyOfRange(packCmdConvertBytes, 0, packCmdConvertLen)));
+
+        return Arrays.copyOfRange(packCmdConvertBytes, 0, packCmdConvertLen);
     }
 
     public static byte[] packSecCommand(byte[] data) {
@@ -126,7 +168,7 @@ public class SecureAbecsCommand {
         Arrays.fill(iv, (byte)0x00);
         byte[]  encryptByte = AESUtils.encrypt(Arrays.copyOfRange(sec_clear_bytes, 0, sec_clearcmd_len), getAseKey(), iv);
 
-        Log.d("SecureAbecsCommand", "encryptByte: " + POSUtil.byteArray2Hex(encryptByte));
+        Log.d("AbecsCommand", "encryptByte: " + POSUtil.byteArray2Hex(encryptByte));
         sec_cmd_bytes[sec_cmd_len++] = 0x16;
         sec_cmd_bytes[sec_cmd_len++] = 0x12;
         System.arraycopy(encryptByte, 0, sec_cmd_bytes, sec_cmd_len, encryptByte.length);
@@ -135,7 +177,7 @@ public class SecureAbecsCommand {
 
         crc = ccitt_crc16(Arrays.copyOfRange(sec_cmd_bytes, 1, sec_cmd_len), sec_cmd_len-1,0);
 
-        Log.d("SecureAbecsCommand", "secure bytes: " + POSUtil.byteArray2Hex(Arrays.copyOfRange(sec_cmd_bytes, 0, sec_cmd_len)));
+        Log.d("AbecsCommand", "secure bytes: " + POSUtil.byteArray2Hex(Arrays.copyOfRange(sec_cmd_bytes, 0, sec_cmd_len)));
 
         sec_clearcmd_len = 0;
         sec_clear_bytes[sec_clearcmd_len++] = 0x16;
@@ -153,7 +195,7 @@ public class SecureAbecsCommand {
         sec_clear_bytes[sec_clearcmd_len++] = (byte)((crc&0xFF00) >>8);
         sec_clear_bytes[sec_clearcmd_len++] = (byte)((crc&0x00FF));
 
-        Log.d("SecureAbecsCommand", "final secure bytes: " + POSUtil.byteArray2Hex(Arrays.copyOfRange(sec_clear_bytes, 0, sec_clearcmd_len)));
+        Log.d("AbecsCommand", "final secure bytes: " + POSUtil.byteArray2Hex(Arrays.copyOfRange(sec_clear_bytes, 0, sec_clearcmd_len)));
 
         return Arrays.copyOfRange(sec_clear_bytes, 0, sec_clearcmd_len);
     }
@@ -171,7 +213,7 @@ public class SecureAbecsCommand {
         }
 
         if(data[0] != 0x16 || data[1] != 0x12 || data[data.length-3] != 0x17){
-            Log.d("SecureAbecsCommand", "check secure command format err: ");
+            Log.d("AbecsCommand", "check secure command format err: ");
             return null;
         }
 
@@ -191,26 +233,26 @@ public class SecureAbecsCommand {
         int crc = ccitt_crc16(Arrays.copyOfRange(changeBytes, 0, changeBytesLen), changeBytesLen,0);
         int checkCrc = ((data[data.length-2] & 0xFF) << 8) | (data[data.length-1] & 0xFF);
         if(crc != checkCrc){
-            Log.d("SecureAbecsCommand", "check secure command crc err: "+crc+","+checkCrc);
+            Log.d("AbecsCommand", "check secure command crc err: "+crc+","+checkCrc);
             return null;
         }
 
-        Log.d("SecureAbecsCommand", "need decrypt data: "+POSUtil.byteArray2Hex(Arrays.copyOfRange(changeBytes, 1, changeBytesLen-1))) ;
+        Log.d("AbecsCommand", "need decrypt data: "+POSUtil.byteArray2Hex(Arrays.copyOfRange(changeBytes, 1, changeBytesLen-1))) ;
 
         byte[] iv = new byte[16];
         byte[]  clearBytes  = AESUtils.decrypt(Arrays.copyOfRange(changeBytes, 1, changeBytesLen-1), getAseKey(), iv);
-        Log.d("SecureAbecsCommand", "clearBytes: " + POSUtil.byteArray2Hex(clearBytes));
+        Log.d("AbecsCommand", "clearBytes: " + POSUtil.byteArray2Hex(clearBytes));
         assert clearBytes != null;
         int len = (clearBytes[0]&0xFF)<<8 | (clearBytes[1]&0xFF);
 
         crc = ccitt_crc16(Arrays.copyOfRange(clearBytes, 4, 4+len), len,0);
         checkCrc = ((clearBytes[2] & 0xFF) << 8) | (clearBytes[3] & 0xFF);
         if(crc != checkCrc){
-            Log.d("SecureAbecsCommand", "2 check secure command crc err: "+crc+","+checkCrc);
+            Log.d("AbecsCommand", "2 check secure command crc err: "+crc+","+checkCrc);
             return null;
         }
 
-        Log.d("SecureAbecsCommand", "check secure command success: ");
+        Log.d("AbecsCommand", "check secure command success: ");
 
 
         return null;
