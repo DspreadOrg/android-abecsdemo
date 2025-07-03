@@ -149,7 +149,7 @@ public class DeviceSerial
     }
 
     public int enviaComando(byte[] bytes, int i) {
-        Log.i(TAG,"execute enviaComando");
+        Log.i(TAG,"execute enviaComando: "+Util.bytesToHex(bytes));
         if (BuildConfig.DEBUG) Log.d("DeviceSerial", "enviaComando....");
 
         if (i < 0) {
@@ -157,34 +157,42 @@ public class DeviceSerial
         }
 
 
-        if (bytes.length != 1 && bytes.length < 7) {
-            Log.d(TAG, "data length is too small");
-            this.sendError = true;
-            setResponseReady(true);
-            return 0;
-        }
-
-        if (bytes.length != 1 && bytes[bytes.length - 3] != ETB) {
-            Log.d(TAG, "data format is error");
-            this.sendError = true;
-            setResponseReady(true);
-            return 0;
-        }
+//        if (bytes.length != 1 && bytes.length < 7) {
+//            Log.d(TAG, "data length is too small");
+//            this.sendError = true;
+//            setResponseReady(true);
+//            return 0;
+//        }
+//
+//        if (bytes.length != 1 && bytes[bytes.length - 3] != ETB) {
+//            Log.d(TAG, "data format is error");
+//            this.sendError = true;
+//            setResponseReady(true);
+//            return 0;
+//        }
 
         int j = 0, synIndex = 0;
         boolean isFindSYN = false;
         List<byte[]> cmdList = new ArrayList<>();
 
         for (j = 0; j < bytes.length; j++) {
-            if (bytes[j] == CAN) {
+            if (bytes[j] == CAN && !isFindSYN) {
                 cmdList.add(Arrays.copyOfRange(bytes, j, j + 1));
             } else if (bytes[j] == SYN && !isFindSYN) {
                 isFindSYN = true;
                 synIndex = j;
             } else if (bytes[j] == ETB) {
                 isFindSYN = false;
-                cmdList.add(Arrays.copyOfRange(bytes, synIndex, j + 3));
-                j += 2;
+                if(j+3 <= bytes.length)
+                {
+                    cmdList.add(Arrays.copyOfRange(bytes, synIndex, j + 3));
+                    j += 2;
+                }
+                else{
+                    cmdList.add(Arrays.copyOfRange(bytes, synIndex, bytes.length));
+                    break;
+                }
+
             }
         }
 
