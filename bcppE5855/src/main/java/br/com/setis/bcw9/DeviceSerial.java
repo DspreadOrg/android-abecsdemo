@@ -287,10 +287,14 @@ public class DeviceSerial
     }
 
     public void ComandoDiretoEncerrado(byte[] out, int len, int cmdResult) {
+        if(BuildConfig.DEBUG)
+            Log.d("DeviceSerial", "============ComandoDiretoEncerrado - INICIO======");
         if(len<0)
             len=0;
-        if (BuildConfig.DEBUG) Log.d("DeviceSerial", String.format("ComandoDiretoEncerrado (cmdResult = %d, len = %d, resp = [%s], aborted = [%b]", new Object[] {
-                Integer.valueOf(cmdResult), Integer.valueOf(len), Util.byte2HexStr(out).substring(0, len * 2), Boolean.valueOf(this.commandAborted) }));
+        if (BuildConfig.DEBUG) Log.d("DeviceSerial", "ComandoDiretoEncerrado (cmdResult = "+cmdResult+", len = "+len+", aborted = "+Boolean.valueOf(this.commandAborted) );
+        if(out != null)
+            if (BuildConfig.DEBUG) Log.d("DeviceSerial", " resp = "+ Util.byte2HexStr(Arrays.copyOfRange(out, 0, len)));
+
         this.commandInProgress = false;
 
         if (!this.commandAborted && out != null) {
