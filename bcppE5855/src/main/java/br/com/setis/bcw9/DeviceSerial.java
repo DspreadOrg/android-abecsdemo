@@ -1,86 +1,86 @@
 package br.com.setis.bcw9;
 
 import android.util.Log;
-import br.com.setis.bcw9.tasks.TaskDirectCommand;
-import br.com.setis.bcw9.tasks.TaskHandleNextCommand;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
+
 import br.com.setis.bcw9.util.Util;
 import br.com.setis.bibliotecapinpad.AcessoDiretoPinpad;
 import br.com.setis.bibliotecapinpad.InterfaceUsuarioPinpad;
-import java.util.Stack;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
+import br.com.setis.bcw9.tasks.TaskDirectCommand;
 
-public class DeviceSerial
-        extends AcessoDiretoPinpad
-        implements TaskDirectCommand.DirectCommandCallback
-        , TaskHandleNextCommand.DirectMulCommandCallback
-{
+public class DeviceSerial extends AcessoDiretoPinpad implements TaskDirectCommand.DirectCommandCallback {
+
     private static final String TAG = "DeviceSerial";
-    private static final int ACK = 6;
-    private static final int SYN = 22;
-    private static final int ETB = 23;
-    private static final int NAK = 21;
-    private static final int CAN = 24;
-    private static final int EOT = 4;
+
+    private static final int ACK = 0x06;
+    private static final int SYN = 0x16;
+    private static final int ETB = 0x17;
+    private static final int NAK = 0x15;
+    private static final int CAN = 0x18;
+    private static final int EOT = 0x04;
+
     private boolean pendingACK = false;
     private boolean pendingNAK = false;
     private boolean commandAborted = false;
     private boolean commandInProgress = false;
     private boolean isResponseReady = false;
-    private boolean sendError = false;
-    private Stack<byte[]> pendingCmd;
-    private RetornoDeviceSerial retornoDeviceSerial;
 
-    public class RetornoDeviceSerial
-    {
+    private Stack<byte[]> pendingCmd;
+
+    public class RetornoDeviceSerial {
         private int returnCode;
         private byte[] answer;
         private Boolean waitingAnswer;
 
         public void RetornoDeviceSerial() {
-            if (BuildConfig.DEBUG) Log.d("DeviceSerial", "RetornoDeviceSerial - construtor - waitingAnswer = true!!");
-            this.waitingAnswer = Boolean.valueOf(true);
+            if (BuildConfig.DEBUG) Log.d(TAG, "RetornoDeviceSerial - construtor - waitingAnswer = true!!");
+            waitingAnswer = true;
         }
 
         public void SetAnswer(byte[] answer, int len, int returnCode) {
+
             if (returnCode < 0) {
-                if (BuildConfig.DEBUG) Log.d("DeviceSerial", "SetAnswer - returnCode < 0");
+                if (BuildConfig.DEBUG) Log.d(TAG, "SetAnswer - returnCode < 0");
                 this.returnCode = returnCode;
                 this.answer = null;
-                this.waitingAnswer = Boolean.valueOf(false);
+                waitingAnswer = false;
                 return;
             }
-            if (BuildConfig.DEBUG) Log.d("DeviceSerial", "SetAnswer - returnCode >= 0");
+            if (BuildConfig.DEBUG) Log.d(TAG, "SetAnswer - returnCode >= 0");
             this.returnCode = 0;
             this.answer = new byte[len];
             System.arraycopy(answer, 0, this.answer, 0, len);
-            this.waitingAnswer = Boolean.valueOf(false);
+            waitingAnswer = false;
         }
 
         int GetReturnCode() {
-            return this.returnCode;
+            return returnCode;
         }
 
         byte[] GetAnswer() {
-            return this.answer;
+            return answer;
         }
 
         Boolean WaitingAnwer() {
-            return this.waitingAnswer;
+            return waitingAnswer;
         }
     }
 
-    private Boolean receivedCAN = Boolean.valueOf(false);
+    private RetornoDeviceSerial retornoDeviceSerial;
+    private Boolean receivedCAN = false;
 
     public DeviceSerial(InterfaceUsuarioPinpad interfaceUsuarioPinpad) {
         super(interfaceUsuarioPinpad);
         PPCompAndroidEvents.getInstance().setInterfacePinpad(interfaceUsuarioPinpad);
-        this.pendingCmd = (Stack)new Stack<>();
+        pendingCmd = new Stack<>();
     }
 
     public synchronized void setResponseReady(boolean bool) {
-        if (BuildConfig.DEBUG) Log.d("DeviceSerial", "setResponseReady - bool=[" + bool + "]");
+        if (BuildConfig.DEBUG) Log.d(TAG, "setResponseReady - bool=[" + bool + "]");
         this.isResponseReady = bool;
     }
 
@@ -88,89 +88,8 @@ public class DeviceSerial
         return this.isResponseReady;
     }
 
-    public int singleEnViaComando(byte[] bytes, int i){
 
-        Log.i(TAG,"execute singleEnViaComando");
-        if (BuildConfig.DEBUG) Log.d("DeviceSerial", "singleEnViaComando....");
-
-        if (i < 0) {
-            throw new IllegalArgumentException("Buffer de tamanho negativo!");
-        }
-
-        if (bytes[0] == 21) {
-            if (BuildConfig.DEBUG) Log.d("DeviceSerial", "SPE envia um NAK!!");
-            setResponseReady(true);
-            return 0;
-        }
-
-        this.sendError = false;
-        this.receivedCAN = Boolean.valueOf(this.pendingACK = this.pendingNAK = false);
-        this.retornoDeviceSerial = new RetornoDeviceSerial();
-
-        Log.d(TAG, "start execute PP_CheckSerialization: cmd is "+Util.bytesToHex(bytes));
-        int st = PPCompAndroid.getInstance().PP_CheckSerialization(bytes);
-
-        switch (st) {
-            case 21:
-                if (BuildConfig.DEBUG) Log.d("DeviceSerial", "PP_CheckSerialization - NAK!!");
-                this.pendingNAK = true;
-                this.commandAborted = false;
-                setResponseReady(true);
-                if(!this.pendingCmd.isEmpty())
-                    (new TaskHandleNextCommand(this)).execute(new Void[0]);
-                return 0;
-            case 4:
-                Log.d(TAG, "PP_CheckSerialization - EOT!!");
-                PPCompAndroid.getInstance().PP_AbortSerializedCmd();
-                this.commandAborted = (this.receivedCAN = Boolean.valueOf(true)).booleanValue();
-                setResponseReady(true);
-                if(!this.pendingCmd.isEmpty())
-                    (new TaskHandleNextCommand(this)).execute(new Void[0]);
-                return 0;
-        }
-        if(st < 0){
-            this.sendError = true;
-            setResponseReady(true);
-            Log.i(TAG,"an error happen when send data via serial !!!!");
-            return 0;
-        }
-
-        if (BuildConfig.DEBUG) Log.d("DeviceSerial", "PP_CheckSerialization = " + st);
-
-        if (!this.commandInProgress) {
-            this.commandAborted = false;
-            this.commandInProgress = true;
-            this.pendingACK = true;
-            setResponseReady(true);
-            (new TaskDirectCommand(this)).execute(new Void[0]);
-        }
-
-        return 0;
-    }
-
-    public int enviaComando(byte[] bytes, int i) {
-        Log.i(TAG,"execute enviaComando: "+Util.bytesToHex(bytes));
-        if (BuildConfig.DEBUG) Log.d("DeviceSerial", "enviaComando....");
-
-        if (i < 0) {
-            throw new IllegalArgumentException("Buffer de tamanho negativo!");
-        }
-
-
-//        if (bytes.length != 1 && bytes.length < 7) {
-//            Log.d(TAG, "data length is too small");
-//            this.sendError = true;
-//            setResponseReady(true);
-//            return 0;
-//        }
-//
-//        if (bytes.length != 1 && bytes[bytes.length - 3] != ETB) {
-//            Log.d(TAG, "data format is error");
-//            this.sendError = true;
-//            setResponseReady(true);
-//            return 0;
-//        }
-
+    private byte[] splitting_data(byte[] bytes, int i) {
         int j = 0, synIndex = 0;
         boolean isFindSYN = false;
         List<byte[]> cmdList = new ArrayList<>();
@@ -197,8 +116,11 @@ public class DeviceSerial
         }
 
         i = 0;
-        for (byte[] cmd : cmdList) {
-            Log.d(TAG, "cmd to abecs:[" + (i++) + "]," + Util.bytesToHex(cmd));
+        if(BuildConfig.DEBUG){
+
+            for (byte[] cmd : cmdList) {
+                Log.d(TAG, "cmd to abecs:[" + (i++) + "]," + Util.bytesToHex(cmd));
+            }
         }
 
         byte[] currentCmdBytes = cmdList.get(0);
@@ -211,107 +133,216 @@ public class DeviceSerial
             cmdList.clear();
         }
 
-        return singleEnViaComando(currentCmdBytes, currentCmdBytes.length);
+        Log.e(TAG, "pendingCmd.size is " + pendingCmd.size());
+
+        return currentCmdBytes;
+    }
+    public void continue_send_abecs_data()
+    {
+        Log.e(TAG, "===continue_send_abecs_data===");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Log.e(TAG, "continue send abecs data");
+                byte[] cmd = pendingCmd.pop();
+                single_enviaComando(cmd, cmd.length);
+            }
+        }).start();
+    }
+    public int single_enviaComando(byte[] bytes, int i) {
+        String input;
+        if (BuildConfig.DEBUG) Log.d(TAG, "enviaComando 2....");
+
+        if (i < 0)
+            throw new IllegalArgumentException("Buffer de tamanho negativo!");
+
+        //Se o SPE enviou um NAK, retransmite a última resposta
+        if (bytes[0] == NAK) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "SPE envia um NAK!!");
+            setResponseReady(true);
+            return 0;
+        }
+
+
+        receivedCAN = pendingACK = pendingNAK = false;
+        retornoDeviceSerial = new RetornoDeviceSerial();
+        input = Util.byte2HexStr(bytes);
+
+        if (BuildConfig.DEBUG) Log.d(TAG, "enviaComando (tamanho=" + bytes.length + ") = [" + input + "]");
+
+        int st = PPCompAndroid.getInstance().PP_CheckSerialization(bytes);
+
+        switch (st) {
+            case NAK:
+                if (BuildConfig.DEBUG) Log.d(TAG, "PP_CheckSerialization - NAK!!");
+                pendingNAK = true;
+                commandAborted = false;
+                setResponseReady(true);
+                return 0;
+            case EOT:
+                if (BuildConfig.DEBUG) Log.d(TAG, "PP_CheckSerialization - EOT!!");
+                PPCompAndroid.getInstance().PP_AbortSerializedCmd();
+                commandAborted = receivedCAN = true;
+                setResponseReady(true);
+                if (pendingCmd.size() > 0) {
+                    Log.e(TAG, "continue process abecs data after can");
+                    continue_send_abecs_data();
+                }
+                return 0;
+            case ACK:
+            default:
+                if (BuildConfig.DEBUG) Log.d(TAG, "PP_CheckSerialization = " + st);
+                break;
+        }
+
+//        pendingACK = true;
+//        setResponseReady(true);
+
+        //Se há comando em curso, armazena para envio posterior
+        if (commandInProgress) {
+            Log.e(TAG, "continue send abecs data");
+            pendingCmd.push(bytes);
+        } else {
+            commandAborted = false;
+            commandInProgress = true;
+            pendingACK = true;
+            setResponseReady(true);
+            new TaskDirectCommand(this).execute();
+        }
+
+        return 0;
     }
 
+    @Override
+    public int enviaComando(byte[] bytes, int i) {
+        String input;
+        if (BuildConfig.DEBUG) Log.d(TAG, "enviaComando 1....");
+
+        if (i < 0)
+            throw new IllegalArgumentException("Buffer de tamanho negativo!");
+
+        //Se o SPE enviou um NAK, retransmite a última resposta
+        if (bytes[0] == NAK) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "SPE envia um NAK!!");
+            setResponseReady(true);
+            return 0;
+        }
+
+        byte[] bytes_first = splitting_data(bytes, i);
+
+        Log.e(TAG, "enviaComando first (tamanho=" + bytes.length + ") = [" + Util.bytesToHex(bytes) + "]");
+
+        return single_enviaComando(bytes_first, bytes_first.length);
+    }
+
+
+    @Override
     public int recebeResposta(byte[] bytes, long l) {
+
         long startTime = System.currentTimeMillis();
         while (!isResponseReady()) {
             try {
-                Thread.sleep(50L);
-            } catch (InterruptedException interruptedException) {}
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+            }
 
-            if (System.currentTimeMillis() - startTime > l) {
+            if ((System.currentTimeMillis() - startTime) > l) {
                 return 0;
             }
         }
 
-        if(this.sendError){
-            Log.i("bcpp api","an error happen when receive via serial !!!!!!!!!!!!!!!");
-            return -1;
-        }
+        if (receivedCAN) {
+            bytes[0] = (byte) EOT;
+            if (BuildConfig.DEBUG) Log.d(TAG, "recebeResposta - EOT!!");
 
-        if (this.receivedCAN.booleanValue()) {
-            bytes[0] = 4;
-            if (BuildConfig.DEBUG) Log.d("DeviceSerial", "recebeResposta - EOT!!");
-
-            this.receivedCAN = Boolean.valueOf(false);
+            receivedCAN = false;
             setResponseReady(false);
             return 1;
         }
 
-        if (this.pendingACK) {
-            bytes[0] = 6;
-            if (BuildConfig.DEBUG) Log.d("DeviceSerial", "recebeResposta - ACK!!");
+        if (pendingACK) {
+            bytes[0] = (byte) ACK;
+            if (BuildConfig.DEBUG) Log.d(TAG, "recebeResposta - ACK!!");
 
-            this.pendingACK = false;
+            pendingACK = false;
             setResponseReady(false);
             return 1;
         }
 
-        if (this.pendingNAK) {
-            bytes[0] = 21;
-            if (BuildConfig.DEBUG) Log.d("DeviceSerial", "recebeResposta - NAK!!");
+        if (pendingNAK) {
+            bytes[0] = (byte) NAK;
+            if (BuildConfig.DEBUG) Log.d(TAG, "recebeResposta - NAK!!");
 
-            this.pendingNAK = false;
+            pendingNAK = false;
             setResponseReady(false);
             return 1;
         }
 
-        if (BuildConfig.DEBUG) Log.d("DeviceSerial", "recebeResposta - RESPOSTA CHEGOU");
 
-        if (this.retornoDeviceSerial.GetReturnCode() < 0) {
-            int st = this.retornoDeviceSerial.GetReturnCode();
+        if (BuildConfig.DEBUG) Log.d(TAG, "recebeResposta - RESPOSTA CHEGOU");
 
-            if (BuildConfig.DEBUG) Log.d("DeviceSerial", "recebeResposta - ERRO =[" + st + "]!!");
+        if (retornoDeviceSerial.GetReturnCode() < 0) {
+            int st = retornoDeviceSerial.GetReturnCode();
+            //retornoDeviceSerial = null;
+
+            if (BuildConfig.DEBUG) Log.d(TAG, "recebeResposta - ERRO =[" + st + "]!!");
 
             setResponseReady(false);
             return st;
         }
 
-        byte[] buff = this.retornoDeviceSerial.GetAnswer();
+        byte buff[] = retornoDeviceSerial.GetAnswer();
 
         if (buff != null && buff.length > 0) {
-            if (BuildConfig.DEBUG) Log.d("DeviceSerial", "recebeResposta- tamanho=" + buff.length);
+            if (BuildConfig.DEBUG) Log.d(TAG, "recebeResposta- tamanho=" + buff.length);
 
             System.arraycopy(buff, 0, bytes, 0, buff.length);
 
             setResponseReady(false);
 
-            if (BuildConfig.DEBUG) Log.d("DeviceSerial", "recebeResposta - FIM tamanho=" + buff.length);
+            if (BuildConfig.DEBUG) Log.d(TAG, "recebeResposta - FIM tamanho=" + buff.length);
             return buff.length;
         }
 
-        if (BuildConfig.DEBUG) Log.d("DeviceSerial", "recebeResposta - Pedido de resposta pela aplicacao ?????");
+        if (BuildConfig.DEBUG) Log.d(TAG, "recebeResposta - Pedido de resposta pela aplicacao ?????");
         return -1;
     }
 
+
+    @Override
     public void ComandoDiretoEncerrado(byte[] out, int len, int cmdResult) {
-        if(BuildConfig.DEBUG)
-            Log.d("DeviceSerial", "============ComandoDiretoEncerrado - INICIO======");
-        if(len<0)
-            len=0;
-        if (BuildConfig.DEBUG) Log.d("DeviceSerial", "ComandoDiretoEncerrado (cmdResult = "+cmdResult+", len = "+len+", aborted = "+Boolean.valueOf(this.commandAborted) );
-        if(out != null)
-            if (BuildConfig.DEBUG) Log.d("DeviceSerial", " resp = "+ Util.byte2HexStr(Arrays.copyOfRange(out, 0, len)));
 
-        this.commandInProgress = false;
 
-        if (!this.commandAborted && out != null) {
-            this.retornoDeviceSerial.SetAnswer(out, len, cmdResult);
-            setResponseReady(true);
-        }
+        if (BuildConfig.DEBUG) Log.d(TAG, String.format("ComandoDiretoEncerrado (cmdResult = %d, len = %d, resp = [%s], aborted = [%b]",
+                cmdResult, len, Util.byte2HexStr(out).substring(0, len * 2), commandAborted));
+        commandInProgress = false;
 
-        if (this.pendingCmd.size() > 0) {
-            byte[] cmd = this.pendingCmd.pop();
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        //Ignora resposta se comando abortado, pois isso implica em receber erro 013
+        //da lib ABECS serial, o que não é desejado
+        if (!commandAborted) {
+            retornoDeviceSerial.SetAnswer(out, len, cmdResult);
+            setResponseReady(true); }
+
+        //Se tem comando pendente de execução, executa
+        if (pendingCmd.size() > 0) {
+            int waittimes = 0;
+            while(true){
+                if(isResponseReady() == false || waittimes++ > 200)
+                    break;
+                try {
+                    Thread.sleep(5);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
             }
-            singleEnViaComando(cmd, cmd.length);
+            }
+            Log.e(TAG, "continue process abecs data");
+            byte[] cmd = pendingCmd.pop();
+            single_enviaComando(cmd, cmd.length);
         }
 
-        if (BuildConfig.DEBUG) Log.d("DeviceSerial", "ComandoDiretoEncerrado - FIM");
+        if (BuildConfig.DEBUG) Log.d(TAG, "ComandoDiretoEncerrado - FIM");
     }
 }
+
+
+
