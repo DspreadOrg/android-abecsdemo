@@ -132,8 +132,10 @@ public class DeviceSerial extends AcessoDiretoPinpad implements TaskDirectComman
             }
             cmdList.clear();
         }
-
-        Log.e(TAG, "pendingCmd.size is " + pendingCmd.size());
+        if(pendingCmd.size() > 1){
+        	if(BuildConfig.DEBUG)        Log.e(TAG, "pendingCmd.size is " + pendingCmd.size());
+        	}
+        
 
         return currentCmdBytes;
     }
@@ -151,7 +153,7 @@ public class DeviceSerial extends AcessoDiretoPinpad implements TaskDirectComman
     }
     public int single_enviaComando(byte[] bytes, int i) {
         String input;
-        if (BuildConfig.DEBUG) Log.d(TAG, "enviaComando 2....");
+        if (BuildConfig.DEBUG) Log.d(TAG, "enviaComando-2....");
 
         if (i < 0)
             throw new IllegalArgumentException("Buffer de tamanho negativo!");
@@ -168,7 +170,7 @@ public class DeviceSerial extends AcessoDiretoPinpad implements TaskDirectComman
         retornoDeviceSerial = new RetornoDeviceSerial();
         input = Util.byte2HexStr(bytes);
 
-        if (BuildConfig.DEBUG) Log.d(TAG, "enviaComando (tamanho=" + bytes.length + ") = [" + input + "]");
+        if (BuildConfig.DEBUG) Log.d(TAG, "enviaComando-2 (tamanho=" + bytes.length + ") = [" + input + "]");
 
         int st = PPCompAndroid.getInstance().PP_CheckSerialization(bytes);
 
@@ -200,7 +202,7 @@ public class DeviceSerial extends AcessoDiretoPinpad implements TaskDirectComman
 
         //Se há comando em curso, armazena para envio posterior
         if (commandInProgress) {
-            Log.e(TAG, "continue send abecs data");
+            if (BuildConfig.DEBUG) Log.e(TAG, "==continue send abecs data==");
             pendingCmd.push(bytes);
         } else {
             commandAborted = false;
@@ -216,7 +218,7 @@ public class DeviceSerial extends AcessoDiretoPinpad implements TaskDirectComman
     @Override
     public int enviaComando(byte[] bytes, int i) {
         String input;
-        if (BuildConfig.DEBUG) Log.d(TAG, "enviaComando 1....");
+        if (BuildConfig.DEBUG) Log.d(TAG, "enviaComando-1....");
 
         if (i < 0)
             throw new IllegalArgumentException("Buffer de tamanho negativo!");
@@ -230,7 +232,7 @@ public class DeviceSerial extends AcessoDiretoPinpad implements TaskDirectComman
 
         byte[] bytes_first = splitting_data(bytes, i);
 
-        Log.e(TAG, "enviaComando first (tamanho=" + bytes.length + ") = [" + Util.bytesToHex(bytes) + "]");
+        Log.e(TAG, "enviaComando-1 (tamanho=" + bytes.length + ") = [" + Util.bytesToHex(bytes) + "]");
 
         return single_enviaComando(bytes_first, bytes_first.length);
     }
@@ -311,8 +313,30 @@ public class DeviceSerial extends AcessoDiretoPinpad implements TaskDirectComman
 
     @Override
     public void ComandoDiretoEncerrado(byte[] out, int len, int cmdResult) {
+    	 if(out == null || len <0){
+            if (BuildConfig.DEBUG) Log.d(TAG, "data is error when execute ComandoDiretoEncerrado, len = " + len);
+            commandInProgress = false;
 
+            if (pendingCmd.size() > 0) {
+                int waittimes = 0;
+                while(true){
+                    if(isResponseReady() == false || waittimes++ > 200)
+                        break;
+                    try {
+                        Thread.sleep(5);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                Log.e(TAG, "continue process abecs data");
+                byte[] cmd = pendingCmd.pop();
+                single_enviaComando(cmd, cmd.length);
+            }
 
+            if (BuildConfig.DEBUG) Log.d(TAG, "ComandoDiretoEncerrado - FIM");
+            return;
+        }
+        
         if (BuildConfig.DEBUG) Log.d(TAG, String.format("ComandoDiretoEncerrado (cmdResult = %d, len = %d, resp = [%s], aborted = [%b]",
                 cmdResult, len, Util.byte2HexStr(out).substring(0, len * 2), commandAborted));
         commandInProgress = false;

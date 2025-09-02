@@ -14,6 +14,9 @@ import com.dspread.ppcomlibrary.utils.AbecsCommand;
 import com.dspread.dsplibrary.AbecsKeyInfo;
 
 import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import br.com.setis.bcw9.DeviceSerial;
 import br.com.setis.bcw9.PPCompAndroid;
@@ -149,10 +152,76 @@ public class NewTestActivity extends AppCompatActivity {
         Log.d("table load", "============== end ============== ");
 
     }
+
+    public void abortCommand(){
+        byte[] test_recebytes = new byte[1024];
+        int rceLen = 0;
+
+        Log.d("BCSerialTest", "Start abort ");
+        String Can ="18";//1647504E303933313331303031313232333334343535363637373838393941414242434344444545464631363131313132323232333333333434343420202031303430342A2A2A454E54524144412023312A2A2A444947495445205355412053454E484117E7D7
+        if(deviceSerial == null)
+            deviceSerial = new DeviceSerial(new InterfaceUsuario(NewTestActivity.this, textView));
+        deviceSerial.enviaComando(POSUtil.hexStringToBytes(Can), Can.length()/2);
+        rceLen = receCommand(test_recebytes,  1000);
+        //Log.d("NewTestActivity", "deviceSerial is: " + deviceSerial);
+        Log.d("BCSerialTest", "data of abort is: "+ POSUtil.byteArray2Hex(Arrays.copyOfRange(test_recebytes, 0, rceLen)));
+
+
+    }
+    private void startCancelDelayedTaskWithExecutor(int delayMillis) {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
+                r -> new Thread(r, "延时任务-Executor")
+        );
+        // 延时2秒执行
+        scheduler.schedule(() -> {
+            abortCommand();
+            scheduler.shutdown();
+        }, delayMillis, TimeUnit.MILLISECONDS);
+    }
+    void doAbortTest(){
+        dispText = "";
+        if(deviceSerial == null)
+            deviceSerial = new DeviceSerial(new InterfaceUsuario(NewTestActivity.this, textView));
+        byte[] test_recebytes = new byte[1024];
+        int rceLen = 0;
+
+        String allCmdStr[] = {
+                "164F504E17A8A9",//OPN
+                "1647504E3039333130313030313132323333343435353636373738383939414142424343444445454646313644313341303145314643323641363038202020313034313252242039392E3939392E3939392C3939444947495445205355412053454E484117ED78",//GPN
+                "16434C58303336001B00202A2A2054425645523030303031202A2A2A2A2A2A2A20563A2030202A2A2A2A2A17C338",//CLX
+                "164F504E17A8A9",//OPN
+                "16524D433033324F50455241C7D5455320464F52414D2046494E414C495A41444153204F4B212117BA08",//RMC
+                "16434C58303336001B00202A2A2054425645523030303031202A2A2A2A2A2A2A20563A2030202A2A2A2A2A17C338",//CLX
+        };
+
+        for(String cmdStr:allCmdStr){
+            byte[] commonBytes = AbecsCommand.packommand(POSUtil.hexStringToBytes(cmdStr.substring(2, cmdStr.length()-6)));
+            deviceSerial.enviaComando(commonBytes, commonBytes.length);
+            rceLen = receCommand(test_recebytes,  1000);
+            Log.d("BCSerialTest", new String(Arrays.copyOfRange(commonBytes, 1, 1+3))+" command's ack: "+ POSUtil.byteArray2Hex(Arrays.copyOfRange(test_recebytes, 0, rceLen)));
+
+            if (Arrays.equals(Arrays.copyOfRange(commonBytes, 0, 4), new byte[]{(byte) 0x16, (byte) 0x47, (byte) 0x50, (byte) 0x4E})) {
+                startCancelDelayedTaskWithExecutor(1000 * 10);
+            }
+            rceLen = receCommand(test_recebytes,  1000*15);
+            Log.d("BCSerialTest", new String(Arrays.copyOfRange(commonBytes, 1, 1+3))+" command's data: "+ (rceLen== 0?"null":POSUtil.byteArray2Hex(Arrays.copyOfRange(test_recebytes, 0, rceLen))));
+        }
+
+    }
     public void serialTest(){
         new Thread(new Runnable() {
             @Override
             public void run() {
+                for(int ai = 0;ai<10; ai++){
+
+                    Log.d("BCSerialTest", "==============abort test start ["+ai+"] ======================");
+                    doAbortTest();
+                    Log.d("BCSerialTest", "==============abort test end ["+ai+"] ======================");
+                }
+                int abc = 0;
+                if(abc == 0)
+                    return;
+
                 dispText = "";
                 deviceSerial = new DeviceSerial(new InterfaceUsuario(NewTestActivity.this, textView));
                 byte[] test_recebytes = new byte[1024];
